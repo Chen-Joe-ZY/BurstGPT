@@ -76,7 +76,7 @@ class ServerOnline(ServerBase):
             self.inputs = inputs
             self.qps = qps
             self.query_time = 0
-            self.max_prompt_len = 1024
+            self.max_prompt_len = 2000
             self.max_gen_len = 1024
             self.prefill_idx = self.get_prefill_idx()
             self.zipf_param = 1.1
@@ -215,10 +215,12 @@ class ServerOnline(ServerBase):
                                      [sampled_output_len]][1]
             output_len = self.inputs[self.prefill_idx[sampled_prompt_len]
                                      [sampled_output_len]][2]
-
+            output_str_len = len(self.inputs[self.prefill_idx[sampled_prompt_len]
+                                     [sampled_output_len]][3])
             self.query_id += 1
 
-            return [self.inputs[self.prefill_idx[sampled_prompt_len][sampled_output_len]][0], prompt_len, self.max_gen_len, sampled_prompt_len, self.max_gen_len, delta_time, self.query_time]
+            # return [self.inputs[self.prefill_idx[sampled_prompt_len][sampled_output_len]][0], prompt_len, self.max_gen_len, sampled_prompt_len, self.max_gen_len, delta_time, self.query_time]
+            return [self.inputs[self.prefill_idx[sampled_prompt_len][sampled_output_len]][0], prompt_len, output_str_len, sampled_prompt_len, sampled_output_len, delta_time, self.query_time]
 
     def __init__(self, model_path, data_path, backend="vllm",
                  device="gpu", log_path="./server_log_trace_gamma.json",
@@ -232,6 +234,7 @@ class ServerOnline(ServerBase):
         self.scale = config.server_config.get('scale')
 
         self.inputs = []
+        # The len_output and len_prompt are the original length of the output and prompt tokens.
         for idx, data in self.dataset.data.items():
             self.inputs.append((self.dataset.data[idx]["prompt"], self.dataset.data[idx]["len_prompt"],
                                self.dataset.data[idx]["len_output"], self.dataset.data[idx]['output']))
@@ -251,6 +254,7 @@ class ServerOnline(ServerBase):
             detail_event_id = self.detail_logger.tick_start(
                 __name__, time.perf_counter())
             _prompt, in_num, out_num, sampled_in_num, sampled_out_num, _, _sleep_time = self.queries.get_query()
+            print(_prompt, in_num, out_num, sampled_in_num, sampled_out_num, _sleep_time)
             if self.backend == "vllm":
                 # async
                 _task_list.append(

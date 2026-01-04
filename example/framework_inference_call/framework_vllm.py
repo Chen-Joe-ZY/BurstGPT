@@ -18,6 +18,8 @@ async def vllm_inference_call_server(prompt, in_num, out_num, sampled_in_num, sa
             "ignore_eos": False,
             "max_tokens": int(out_num),
             "temperature": config.server_config['temperature'],
+            "request_tokens": int(sampled_in_num),
+            "response_tokens": int(out_num),
         }
         first_chunk_time = 0
         start_time = time.perf_counter()
